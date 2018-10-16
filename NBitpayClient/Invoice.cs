@@ -74,12 +74,6 @@ namespace NBitpayClient
             get; set;
         }
 
-        [JsonProperty("paymentUrls")]
-        public NBitpayClient.InvoicePaymentUrls PaymentUrls
-        {
-            get; set;
-        }
-
         [JsonProperty("address")]
         public string Address
         {
@@ -480,10 +474,7 @@ namespace NBitpayClient
             return false;
         }
 
-        public string BitcoinAddress
-        {
-            get; set;
-        }
+        public string BitcoinAddress { get; set; }
 
         public bool ShouldBitcoinAddress()
         {
@@ -492,7 +483,7 @@ namespace NBitpayClient
 
         public bool Refundable
         {
-            get { return this.Flags != null && this.Flags.Refundable; }
+            get { return Flags != null && Flags.Refundable; }
         }
 
         public bool ShouldSerializeRefundable()
@@ -500,7 +491,7 @@ namespace NBitpayClient
             return false;
         }
 
-        [Newtonsoft.Json.JsonProperty]
+        [JsonProperty]
         private Flags Flags { get; set; }
 
         public bool ShouldSerializeFlags()
@@ -508,25 +499,26 @@ namespace NBitpayClient
             return false;
         }
 
+        [JsonProperty("paymentSubtotals")]
         public Dictionary<string, long> PaymentSubtotals { get; set; }
 
+        [JsonProperty("paymentTotals")]
         public Dictionary<string, long> PaymentTotals { get; set; }
+
+        [JsonProperty("amountPaid")]
         public long AmountPaid { get; set; }
 
+        [JsonProperty("exchangeRates")]
         public Dictionary<string, Dictionary<string, decimal>> ExchangeRates { get; set; }
 
-        public Dictionary<string, InvoiceSupportedTransactionCurrency> SupportedTransactionCurrencies { get; set; }
-
-        /// <summary>
-        /// The cryptocurrency used to pay the invoice. This field will only be available after a transaction is applied to the invoice. Possible values are currently `BTC` or `BCH`.
-        /// </summary>
-        public string TransactionCurrency { get; set; }
-
         // "paymentCurrencies":["BTC"] or "paymentCurrencies":["BCH"]
+        [JsonProperty("paymentCurrencies")]
         public string[] PaymentCurrencies { get; set; }
 
+        [JsonProperty("minerFees")]
         public Dictionary<string, MinerFeeInfo> MinerFees { get; set; }
 
+        [JsonProperty("addresses")]
         public Dictionary<string, string> Addresses { get; set; }
 
         public bool ShouldSerializeAddresses()
