@@ -523,7 +523,7 @@ namespace NBitpayClient
         public virtual async Task<Rate> GetRateAsync(string baseCurrencyCode, string currencyCode)
         {
             var url = $"rates/{baseCurrencyCode}/{currencyCode}";
-            HttpResponseMessage response = await GetAsync(url, true).ConfigureAwait(false);
+            HttpResponseMessage response = await GetAsync(url, false).ConfigureAwait(false);
             var rate = await ParseResponse<Rate>(response).ConfigureAwait(false);
             return rate;
         }
