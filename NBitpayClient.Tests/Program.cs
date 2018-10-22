@@ -24,44 +24,47 @@ namespace NBitpayClient.Tests
 
         /// </summary>
 
-        private static CustomServer Server;
+        private static readonly CustomServer Server;
         private static RPCClient RPC;
         private static readonly int serverPort = 38633;
-        private static string CallbackUri;
+        private static readonly string CallbackUri;
 
         private Bitpay Bitpay = null;
 
         public static void Main(string[] args)
         {
-            Logs.Configure(new FuncLoggerFactory(i => new CustomerConsoleLogger(i, (a, b) => true, false)));
-            CustomServer server = null;
-            try
-            {
-                new Program().TestContextFree();
-                RPC = new RPCClient(RPCAuth, "http://localhost:" + Network.RPCPort, Network);
-                RPC.GetBalance();
-                Logs.Tests.LogInformation("Can connect to RPC");
-                var cookie = RandomUtils.GetUInt64();
-                CallbackUri = "http://" + GetExternalIp() + ":" + serverPort + "/" + cookie;
-                Logs.Tests.LogInformation("Callback url used is " + CallbackUri);
-                Server = new CustomServer("http://0.0.0.0:" + serverPort + "/", cookie);
-                new Program().Run();
-                //Console.ReadLine();
-                Logs.Tests.LogInformation("Tests ran successfully");
-            }
-            catch (AssertException ex)
-            {
-                Logs.Tests.LogError(ex.Message);
-            }
-            catch (Exception ex)
-            {
-                Logs.Tests.LogError(ex.ToString());
-            }
-            finally
-            {
-                if (server != null)
-                    Server.Dispose();
-            }
+            new Program().Run();
+
+            //Logs.Configure(new FuncLoggerFactory(i => new CustomerConsoleLogger(i, (a, b) => true, false)));
+            //CustomServer server = null;
+            //try
+            //{
+            //    new Program().TestContextFree();
+            //    RPC = new RPCClient(RPCAuth, "http://localhost:" + Network.RPCPort, Network);
+            //    RPC.GetBalance();
+            //    Logs.Tests.LogInformation("Can connect to RPC");
+            //    var cookie = RandomUtils.GetUInt64();
+            //    CallbackUri = "http://" + GetExternalIp() + ":" + serverPort + "/" + cookie;
+            //    Logs.Tests.LogInformation("Callback url used is " + CallbackUri);
+            //    Server = new CustomServer("http://0.0.0.0:" + serverPort + "/", cookie);
+            //    new Program().Run();
+            //    //Console.ReadLine();
+            //    Logs.Tests.LogInformation("Tests ran successfully");
+            //}
+            //catch (AssertException ex)
+            //{
+            //    Logs.Tests.LogError(ex.Message);
+            //}
+            //catch (Exception ex)
+            //{
+            //    Logs.Tests.LogError(ex.ToString());
+            //}
+            //finally
+            //{
+            //    if (server != null)
+            //        Server.Dispose();
+            //}
+
             Console.ReadLine();
         }
 
@@ -123,7 +126,7 @@ namespace NBitpayClient.Tests
         private void Run()
         {
             EnsureRegisteredKey();
-            CanMakeInvoice();
+            //CanMakeInvoice();
             CanGetRate();
         }
 

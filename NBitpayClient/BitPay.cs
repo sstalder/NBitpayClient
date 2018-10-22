@@ -188,6 +188,20 @@ namespace NBitpayClient
         /// <param name="ecKey">An elliptical curve key.</param>
         /// <param name="clientName">The label for this client.</param>
         /// <param name="envUrl">The target server URL.</param>
+        public Bitpay(Uri envUrl)
+        {
+            if (envUrl == null)
+                throw new ArgumentNullException(nameof(envUrl));
+
+            _baseUrl = envUrl;
+        }
+
+        /// <summary>
+        /// Constructor for use if the keys and SIN were derived external to this library.
+        /// </summary>
+        /// <param name="ecKey">An elliptical curve key.</param>
+        /// <param name="clientName">The label for this client.</param>
+        /// <param name="envUrl">The target server URL.</param>
         public Bitpay(Key ecKey, Uri envUrl)
         {
             if (ecKey == null)
@@ -483,8 +497,9 @@ namespace NBitpayClient
         {
             var url = $"rates{(string.IsNullOrEmpty(baseCurrencyCode) ? $"/{baseCurrencyCode}" : String.Empty)}";
 
-            HttpResponseMessage response = await GetAsync(url, true).ConfigureAwait(false);
+            var response = await GetAsync(url, false).ConfigureAwait(false);
             var rates = await ParseResponse<List<Rate>>(response).ConfigureAwait(false);
+
             return new Rates(rates);
         }
 
@@ -654,12 +669,16 @@ namespace NBitpayClient
             try
             {
                 var message = new HttpRequestMessage(HttpMethod.Get, GetFullUri(path));
+
                 message.Headers.Add("x-accept-version", BITPAY_API_VERSION);
+
                 if (sign)
                 {
                     _Auth.Sign(message);
                 }
+
                 var result = await _Client.SendAsync(message).ConfigureAwait(false);
+
                 return result;
             }
             catch (Exception ex)
