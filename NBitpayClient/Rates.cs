@@ -1,6 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Net.Http;
+﻿using System.Collections.Generic;
 
 namespace NBitpayClient
 {
@@ -9,33 +7,37 @@ namespace NBitpayClient
     /// </summary>
     public class Rates
     {
-        private List<Rate> _rates;
+        private readonly List<Rate> _rates;
+
+        public Rates()
+        {
+        }
 
         public Rates(List<Rate> rates)
         {
             _rates = rates;
         }
-	
-		public List<Rate> AllRates
-		{
-			get
-			{
-				return _rates;
-			}
-		}
+
+        public List<Rate> AllRates
+        {
+            get
+            {
+                return _rates;
+            }
+        }
 
         public decimal GetRate(string currencyCode)
         {
-		    decimal val = 0;
-		    foreach (Rate rateObj in _rates)
+            decimal val = 0;
+            foreach (Rate rateObj in _rates)
             {
-			    if (rateObj.Code.Equals(currencyCode))
+                if (rateObj.Code.Equals(currencyCode))
                 {
                     val = rateObj.Value;
                     break;
-			    }
-		    }
-    		return val;
-	    }
+                }
+            }
+            return val;
+        }
     }
 }

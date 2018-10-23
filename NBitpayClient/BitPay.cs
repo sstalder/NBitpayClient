@@ -160,7 +160,7 @@ namespace NBitpayClient
             }
         }
 
-        private const String BITPAY_API_VERSION = "2.0.0";
+        private const string BITPAY_API_VERSION = "2.0.0";
 
         private Uri _baseUrl = null;
         private AuthInformation _Auth;
@@ -223,7 +223,7 @@ namespace NBitpayClient
             token.Guid = Guid.NewGuid().ToString();
             token.PairingCode = pairingCode.ToString();
             token.Label = "DEFAULT";
-            String json = JsonConvert.SerializeObject(token);
+            string json = JsonConvert.SerializeObject(token);
             HttpResponseMessage response = await PostAsync("tokens", json).ConfigureAwait(false);
             var tokens = await ParseResponse<List<Token>>(response).ConfigureAwait(false);
             foreach (Token t in tokens)
@@ -257,7 +257,7 @@ namespace NBitpayClient
             token.Facade = facade.ToString();
             token.Count = 1;
             token.Label = label ?? "DEFAULT";
-            String json = JsonConvert.SerializeObject(token);
+            string json = JsonConvert.SerializeObject(token);
             HttpResponseMessage response = await PostAsync("tokens", json).ConfigureAwait(false);
             var tokens = await ParseResponse<List<Token>>(response).ConfigureAwait(false);
             // Expecting a single token resource.
@@ -293,14 +293,7 @@ namespace NBitpayClient
             invoice.Guid = Guid.NewGuid().ToString();
 
             var json = JsonConvert.SerializeObject(invoice);
-
-            Debug.WriteLine("BitPay Request:");
-            Debug.WriteLine(json);
-
             var response = await PostAsync("invoices", json, true).ConfigureAwait(false);
-
-            Debug.WriteLine("BitPay Response:");
-            Debug.WriteLine(response);
 
             invoice = await ParseResponse<Invoice>(response).ConfigureAwait(false);
 
@@ -316,7 +309,7 @@ namespace NBitpayClient
         /// <param name="invoiceId">The id of the requested invoice.</param>
         /// <param name="facade">The facade used (default POS).</param>
         /// <returns>The invoice object retrieved from the server.</returns>
-        public virtual Invoice GetInvoice(String invoiceId, Facade facade = null)
+        public virtual Invoice GetInvoice(string invoiceId, Facade facade = null)
         {
             return GetInvoiceAsync(invoiceId, facade).GetAwaiter().GetResult();
         }
@@ -327,7 +320,7 @@ namespace NBitpayClient
         /// <param name="invoiceId">The id of the requested invoice.</param>
         /// <param name="facade">The facade used (default POS).</param>
         /// <returns>The invoice object retrieved from the server.</returns>
-        public virtual async Task<Invoice> GetInvoiceAsync(String invoiceId, Facade facade = null)
+        public virtual async Task<Invoice> GetInvoiceAsync(string invoiceId, Facade facade = null)
         {
             facade = facade ?? Facade.Merchant;
             // Provide the merchant token whenthe merchant facade is being used.
@@ -495,7 +488,7 @@ namespace NBitpayClient
         /// <returns>The rate table as an object retrieved from the server.</returns>
         public virtual async Task<Rates> GetRatesAsync(string baseCurrencyCode = null)
         {
-            var url = $"rates{(string.IsNullOrEmpty(baseCurrencyCode) ? $"/{baseCurrencyCode}" : String.Empty)}";
+            var url = $"rates{(string.IsNullOrEmpty(baseCurrencyCode) ? $"/{baseCurrencyCode}" : string.Empty)}";
 
             var response = await GetAsync(url, false).ConfigureAwait(false);
             var rates = await ParseResponse<List<Rate>>(response).ConfigureAwait(false);
@@ -523,7 +516,7 @@ namespace NBitpayClient
         public virtual async Task<Rate> GetRateAsync(string baseCurrencyCode, string currencyCode)
         {
             var url = $"rates/{baseCurrencyCode}/{currencyCode}";
-            HttpResponseMessage response = await GetAsync(url, false).ConfigureAwait(false);
+            var response = await GetAsync(url, false).ConfigureAwait(false);
             var rate = await ParseResponse<Rate>(response).ConfigureAwait(false);
             return rate;
         }
@@ -560,7 +553,7 @@ namespace NBitpayClient
         /// <param name="dateStart">The start date for the query.</param>
         /// <param name="dateEnd">The end date for the query.</param>
         /// <returns>A list of invoice objects retrieved from the server.</returns>
-        public virtual Ledger GetLedger(String currency, DateTime? dateStart = null, DateTime? dateEnd = null)
+        public virtual Ledger GetLedger(string currency, DateTime? dateStart = null, DateTime? dateEnd = null)
         {
             return GetLedgerAsync(currency, dateStart, dateEnd).GetAwaiter().GetResult();
         }
@@ -572,28 +565,28 @@ namespace NBitpayClient
         /// <param name="dateStart">The start date for the query.</param>
         /// <param name="dateEnd">The end date for the query.</param>
         /// <returns>A list of invoice objects retrieved from the server.</returns>
-        public virtual async Task<Ledger> GetLedgerAsync(String currency, DateTime? dateStart = null, DateTime? dateEnd = null)
+        public virtual async Task<Ledger> GetLedgerAsync(string currency, DateTime? dateStart = null, DateTime? dateEnd = null)
         {
             var token = await GetAccessTokenAsync(Facade.Merchant).ConfigureAwait(false);
 
-            Dictionary<string, string> parameters = new Dictionary<string, string>();
+            var parameters = new Dictionary<string, string>();
             parameters.Add("token", token.Value);
             if (dateStart != null)
                 parameters.Add("startDate", dateStart.Value.ToString("d", CultureInfo.InvariantCulture));
             if (dateEnd != null)
                 parameters.Add("endDate", dateEnd.Value.ToString("d", CultureInfo.InvariantCulture));
 
-            HttpResponseMessage response = await GetAsync($"ledgers/{currency}" + BuildQuery(parameters), true).ConfigureAwait(false);
+            var response = await GetAsync($"ledgers/{currency}" + BuildQuery(parameters), true).ConfigureAwait(false);
             var entries = await ParseResponse<List<LedgerEntry>>(response).ConfigureAwait(false);
             return new Ledger(null, 0, entries);
         }
 
         private AccessToken[] ParseTokens(string response)
         {
-            List<AccessToken> tokens = new List<AccessToken>();
+            var tokens = new List<AccessToken>();
             try
             {
-                JArray obj = (JArray)JObject.Parse(response).First.First;
+                var obj = (JArray)JObject.Parse(response).First.First;
                 foreach (var jobj in obj.OfType<JObject>())
                 {
                     foreach (var prop in jobj.Properties())
@@ -605,13 +598,13 @@ namespace NBitpayClient
             }
             catch (Exception ex)
             {
-                throw new BitPayException("Error: response to GET /tokens could not be parsed - " + ex.ToString());
+                throw new BitPayException("Error: response to GET /tokens could not be parsed - " + ex);
             }
         }
 
         public virtual async Task<AccessToken[]> GetAccessTokensAsync()
         {
-            HttpResponseMessage response = await GetAsync("tokens", true).ConfigureAwait(false);
+            var response = await GetAsync("tokens", true).ConfigureAwait(false);
             if (!response.IsSuccessStatusCode)
                 return new AccessToken[0];
             response.EnsureSuccessStatusCode();
@@ -664,7 +657,7 @@ namespace NBitpayClient
             return token;
         }
 
-        private async Task<HttpResponseMessage> GetAsync(String path, bool sign)
+        private async Task<HttpResponseMessage> GetAsync(string path, bool sign)
         {
             try
             {
@@ -683,14 +676,17 @@ namespace NBitpayClient
             }
             catch (Exception ex)
             {
-                throw new BitPayException("Error: " + ex.ToString());
+                throw new BitPayException("Error: " + ex);
             }
         }
 
-        private async Task<HttpResponseMessage> PostAsync(String path, String json, bool signatureRequired = false)
+        private async Task<HttpResponseMessage> PostAsync(string path, string json, bool signatureRequired = false)
         {
             try
             {
+                Debug.WriteLine($"BitPay Request: {path}");
+                Debug.WriteLine(json);
+
                 var message = new HttpRequestMessage(HttpMethod.Post, GetFullUri(path));
                 message.Headers.Add("x-accept-version", BITPAY_API_VERSION);
                 message.Content = new StringContent(json, Encoding.UTF8, "application/json");
@@ -703,7 +699,7 @@ namespace NBitpayClient
             }
             catch (Exception ex)
             {
-                throw new BitPayException("Error: " + ex.ToString());
+                throw new BitPayException("Error: " + ex);
             }
         }
 
@@ -723,19 +719,26 @@ namespace NBitpayClient
                 throw new BitPayException("Error: HTTP response is null");
             }
 
+            var data = default(T);
+
             // Get the response as a dynamic object for detecting possible error(s) or data object.
             // An error(s) object raises an exception.
             // A data object has its content extracted (throw away the data wrapper object).
-            String responseString = await response.Content.ReadAsStringAsync().ConfigureAwait(false);
+            var responseString = await response.Content.ReadAsStringAsync().ConfigureAwait(false);
 
             if (responseString.Length > 0 && responseString[0] == '[')
             {
+                data = JsonConvert.DeserializeObject<T>(responseString);
+
+                WriteDebug(data);
+
                 // some endpoints return an array at the root (like /Ledgers/{currency}).
                 // without short circuiting here, the JObject.Parse will throw
-                return JsonConvert.DeserializeObject<T>(responseString);
+                return data;
             }
 
-            JObject obj = null;
+            JObject obj;
+
             try
             {
                 obj = JObject.Parse(responseString);
@@ -751,27 +754,50 @@ namespace NBitpayClient
             if (obj.Property("error") != null)
             {
                 var ex = new BitPayException();
+
                 ex.AddError(obj.Property("error").Value.ToString());
-                throw ex;
-            }
-            if (obj.Property("errors") != null)
-            {
-                var ex = new BitPayException();
-                foreach (var errorItem in ((JArray)obj.Property("errors").Value).OfType<JObject>())
-                {
-                    ex.AddError(errorItem.Property("error").Value.ToString() + " " + errorItem.Property("param").Value.ToString());
-                }
+
+                WriteDebug(ex);
+
                 throw ex;
             }
 
-            T data = default(T);
+            if (obj.Property("errors") != null)
+            {
+                var ex = new BitPayException();
+
+                foreach (var errorItem in ((JArray)obj.Property("errors").Value).OfType<JObject>())
+                {
+                    ex.AddError(errorItem.Property("error").Value + " " + errorItem.Property("param").Value);
+                }
+
+                WriteDebug(ex);
+
+                throw ex;
+            }
+
             // Check for and exclude a "data" object from the response.
             if (obj.Property("data") != null)
             {
                 responseString = JObject.Parse(responseString).SelectToken("data").ToString();
                 data = JsonConvert.DeserializeObject<T>(responseString);
             }
+
+            WriteDebug(data);
+
             return data;
+        }
+
+        private static void WriteDebug<T>(T obj)
+        {
+            try
+            {
+                Debug.WriteLine("BitPay Response:");
+                Debug.WriteLine(JsonConvert.SerializeObject(obj));
+            }
+            catch
+            {
+            }
         }
     }
 }

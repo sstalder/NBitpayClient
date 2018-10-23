@@ -1,5 +1,4 @@
 ﻿using Newtonsoft.Json;
-using System;
 
 namespace NBitpayClient
 {
@@ -8,7 +7,9 @@ namespace NBitpayClient
     /// </summary>
     public class Rate
     {
-        public Rate() {}
+        public Rate()
+        {
+        }
 
         [JsonProperty(PropertyName = "name")]
         public string Name { get; set; }
