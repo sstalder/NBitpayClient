@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Globalization;
 using System.Linq;
+using System.Net;
 using System.Net.Http;
 using System.Text;
 using System.Threading.Tasks;
@@ -11,6 +12,7 @@ using NBitcoin;
 using NBitpayClient.Extensions;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
+using NLog;
 
 namespace NBitpayClient
 {
@@ -58,7 +60,7 @@ namespace NBitpayClient
 
         public override string ToString()
         {
-            return _Value;
+            return _Value.ToLower();
         }
     }
 
@@ -88,6 +90,8 @@ namespace NBitpayClient
 
     public class Bitpay
     {
+        private readonly Logger _log = LogManager.GetCurrentClassLogger();
+
         public class AccessToken
         {
             public string Key
@@ -251,21 +255,25 @@ namespace NBitpayClient
         /// <returns>A pairing code for this client.  This code must be used to authorize this client at BitPay.com/api-tokens.</returns>
         public virtual async Task<PairingCode> RequestClientAuthorizationAsync(string label, Facade facade)
         {
-            Token token = new Token();
+            var token = new Token();
             token.Id = _Auth.SIN;
             token.Guid = Guid.NewGuid().ToString();
             token.Facade = facade.ToString();
             token.Count = 1;
             token.Label = label ?? "DEFAULT";
-            string json = JsonConvert.SerializeObject(token);
-            HttpResponseMessage response = await PostAsync("tokens", json).ConfigureAwait(false);
+
+            var json = JsonConvert.SerializeObject(token);
+            var response = await PostAsync("tokens", json).ConfigureAwait(false);
             var tokens = await ParseResponse<List<Token>>(response).ConfigureAwait(false);
+
             // Expecting a single token resource.
             if (tokens.Count != 1)
             {
                 throw new BitPayException("Error - failed to get token resource; expected 1 token, got " + tokens.Count);
             }
+
             _Auth.SaveToken(tokens[0].Facade, tokens[0].Value);
+
             return new PairingCode(tokens[0].PairingCode);
         }
 
@@ -684,17 +692,27 @@ namespace NBitpayClient
         {
             try
             {
-                Debug.WriteLine($"BitPay Request: {path}");
-                Debug.WriteLine(json);
+                _log.Debug(GetFullUri(path));
+                _log.Debug(json);
 
                 var message = new HttpRequestMessage(HttpMethod.Post, GetFullUri(path));
                 message.Headers.Add("x-accept-version", BITPAY_API_VERSION);
                 message.Content = new StringContent(json, Encoding.UTF8, "application/json");
+
                 if (signatureRequired)
                 {
                     _Auth.Sign(message);
                 }
+
                 var result = await _Client.SendAsync(message).ConfigureAwait(false);
+
+                if (result.StatusCode > HttpStatusCode.Accepted)
+                {
+                    var response = await result.Content.ReadAsStringAsync();
+
+                    throw new BitPayException("Invalid Status: " + response);
+                }
+
                 return result;
             }
             catch (Exception ex)
