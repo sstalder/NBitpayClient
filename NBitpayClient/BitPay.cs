@@ -1,7 +1,6 @@
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
-using System.Diagnostics;
 using System.Globalization;
 using System.Linq;
 using System.Net;
@@ -690,35 +689,29 @@ namespace NBitpayClient
 
         private async Task<HttpResponseMessage> PostAsync(string path, string json, bool signatureRequired = false)
         {
-            try
+            _log.Debug(GetFullUri(path));
+            _log.Debug(json);
+
+            var message = new HttpRequestMessage(HttpMethod.Post, GetFullUri(path));
+
+            message.Headers.Add("x-accept-version", BITPAY_API_VERSION);
+            message.Content = new StringContent(json, Encoding.UTF8, "application/json");
+
+            if (signatureRequired)
             {
-                _log.Debug(GetFullUri(path));
-                _log.Debug(json);
-
-                var message = new HttpRequestMessage(HttpMethod.Post, GetFullUri(path));
-                message.Headers.Add("x-accept-version", BITPAY_API_VERSION);
-                message.Content = new StringContent(json, Encoding.UTF8, "application/json");
-
-                if (signatureRequired)
-                {
-                    _Auth.Sign(message);
-                }
-
-                var result = await _Client.SendAsync(message).ConfigureAwait(false);
-
-                if (result.StatusCode > HttpStatusCode.Accepted)
-                {
-                    var response = await result.Content.ReadAsStringAsync();
-
-                    throw new BitPayException("Invalid Status: " + response);
-                }
-
-                return result;
+                _Auth.Sign(message);
             }
-            catch (Exception ex)
+
+            var result = await _Client.SendAsync(message).ConfigureAwait(false);
+
+            if (result.StatusCode > HttpStatusCode.Accepted)
             {
-                throw new BitPayException("Error: " + ex);
+                var response = await result.Content.ReadAsStringAsync();
+
+                throw new BitPayException(response);
             }
+
+            return result;
         }
 
         private string GetFullUri(string relativePath)
@@ -806,12 +799,12 @@ namespace NBitpayClient
             return data;
         }
 
-        private static void WriteDebug<T>(T obj)
+        private void WriteDebug<T>(T obj)
         {
             try
             {
-                Debug.WriteLine("BitPay Response:");
-                Debug.WriteLine(JsonConvert.SerializeObject(obj));
+                _log.Debug("BitPay Response:");
+                _log.Debug(JsonConvert.SerializeObject(obj));
             }
             catch
             {

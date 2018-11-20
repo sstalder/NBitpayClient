@@ -1,52 +1,27 @@
 ﻿using System;
 using System.IO;
-using System.Net;
-using System.Net.Http;
 using Microsoft.Extensions.Logging;
 using NBitcoin;
-using NBitcoin.Payment;
-using NBitcoin.RPC;
-using NBitpayClient.Extensions;
 using Newtonsoft.Json;
 
 namespace NBitpayClient.Tests
 {
     public class Program
     {
-        //Bitpay parameters
         private readonly Uri BitPayUri = new Uri("https://test.bitpay.com/");
 
         private static Network Network = Network.TestNet;
-        //////////////
-
-        //RPC Testnet settings
-        private static readonly string RPCAuth = "cookiefile=G:\\Bitcoin\\testnet3\\.cookie"; // or user:pwd or null for default
-
-        /// </summary>
-
-        private static CustomServer Server;
-        private static RPCClient RPC;
-        private static readonly int serverPort = 38633;
-        private static string CallbackUri;
 
         private Bitpay Bitpay = null;
 
         public static void Main(string[] args)
         {
             Logs.Configure(new FuncLoggerFactory(i => new CustomerConsoleLogger(i, (a, b) => true, false)));
-            CustomServer server = null;
+
             try
             {
-                new Program().TestContextFree();
-                RPC = new RPCClient(RPCAuth, "http://localhost:" + Network.RPCPort, Network);
-                RPC.GetBalance();
-                Logs.Tests.LogInformation("Can connect to RPC");
-                var cookie = RandomUtils.GetUInt64();
-                CallbackUri = "http://" + GetExternalIp() + ":" + serverPort + "/" + cookie;
-                Logs.Tests.LogInformation("Callback url used is " + CallbackUri);
-                Server = new CustomServer("http://0.0.0.0:" + serverPort + "/", cookie);
                 new Program().Run();
-                //Console.ReadLine();
+
                 Logs.Tests.LogInformation("Tests ran successfully");
             }
             catch (AssertException ex)
@@ -57,38 +32,8 @@ namespace NBitpayClient.Tests
             {
                 Logs.Tests.LogError(ex.ToString());
             }
-            finally
-            {
-                if (server != null)
-                    Server.Dispose();
-            }
 
             Console.ReadLine();
-        }
-
-        private void TestContextFree()
-        {
-            CanSignAndCheckSig();
-            CanSerializeDeserialize();
-        }
-
-        private void CanSignAndCheckSig()
-        {
-            var key = new Key();
-            string uri = "http://toto:9393/";
-            string content = "blah";
-            var sig = key.GetBitIDSignature(uri, content);
-            Assert.True(key.PubKey.GetBitIDSIN().ValidateSIN());
-            Assert.NotNull(sig);
-            Assert.True(key.PubKey.CheckBitIDSignature(sig, uri, content));
-            Assert.False(key.PubKey.CheckBitIDSignature(sig, uri + "1", content));
-            Assert.False(key.PubKey.CheckBitIDSignature(sig, uri, content + "1"));
-
-            content = null;
-            sig = key.GetBitIDSignature(uri, content);
-            Assert.True(key.PubKey.CheckBitIDSignature(sig, uri, content));
-            Assert.True(key.PubKey.CheckBitIDSignature(sig, uri, string.Empty));
-            Assert.False(key.PubKey.CheckBitIDSignature(sig, uri, "1"));
         }
 
         private void CanSerializeDeserialize()
@@ -112,45 +57,48 @@ namespace NBitpayClient.Tests
             var serializedInvoice = JsonConvert.SerializeObject(invoice);
         }
 
-        private static IPAddress GetExternalIp()
-        {
-            using (var http = new HttpClient())
-            {
-                var ip = http.GetAsync("http://icanhazip.com").Result.Content.ReadAsStringAsync().Result;
-                return IPAddress.Parse(ip.Replace("\n", ""));
-            }
-        }
-
         private void Run()
         {
+            //CanSerializeDeserialize();
             EnsureRegisteredKey();
             //CanMakeInvoice();
-            CanGetRate();
+            //CanGetRate();
+            ThrowsError();
+        }
+
+        private void ThrowsError()
+        {
+            var invoice = Bitpay.CreateInvoice(new Invoice
+            {
+                Price = 0.01m,
+                Currency = "USD",
+                ItemDesc = "This should fail",
+                FullNotifications = true,
+                PaymentCurrencies = new[] { "BTC" }
+            });
+
+            Assert.NotNull(invoice);
         }
 
         private void CanMakeInvoice()
         {
-            var invoice = Bitpay.CreateInvoice(new Invoice()
+            var invoice = Bitpay.CreateInvoice(new Invoice
             {
-                Price = 5.0m,
+                Price = 1.0m,
                 Currency = "USD",
                 PosData = "posData",
                 OrderId = "orderId",
-                //RedirectURL = redirect + "redirect",
-                NotificationURL = CallbackUri + "/notification",
+                NotificationURL = "/notification",
                 ItemDesc = "Some description",
                 FullNotifications = true
             });
-            Logs.Tests.LogInformation("Invoice created");
-            BitcoinUrlBuilder url = new BitcoinUrlBuilder(invoice.PaymentUrls.BIP21);
-            RPC.SendToAddress(url.Address, url.Amount);
-            Logs.Tests.LogInformation("Invoice paid");
-            //Server.ProcessNextRequest((ctx) =>
-            //{
-            //	var ipn = new StreamReader(ctx.Request.Body).ReadToEnd();
-            //	JsonConvert.DeserializeObject<InvoicePaymentNotification>(ipn); //can deserialize
-            //});
+
+            var response = Bitpay.CreateInvoice(invoice);
+
+            Assert.NotNull(response);
+
             var invoice2 = Bitpay.GetInvoice(invoice.Id);
+
             Assert.NotNull(invoice2);
         }
 
